@@ -1,0 +1,30 @@
+# 通用对话
+name: chat
+description: "通用多轮对话"
+enabled: true
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 2048
+  stream: true
+  # 主模型熔断 / 建流失败时按序尝试。
+  # 在 providers 中注册对应 provider 后解注以启用。
+  fallback: []
+  # fallback:
+  #   - { provider: deepseek, model: deepseek-chat }
+  #   - { provider: qwen,     model: qwen2.5-72b  }
+
+prompt:
+  system: |
+    你是 ClawServer 的通用对话助手，回答准确、简洁、友好。
+    保持上下文一致，不捏造事实。
+  user_template: "{{content}}"
+
+memory:
+  enabled: true
+  max_turns: 20
+
+timeout_secs: 120

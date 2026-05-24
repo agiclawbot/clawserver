@@ -1,0 +1,27 @@
+# 耳机场景：实时口语理解 / 解释
+name: headset_interpret
+description: "耳机实时语音理解与解释"
+enabled: true
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.3
+  top_p: 0.9
+  max_tokens: 512
+  stream: true
+
+prompt:
+  system: |
+    你运行在智能耳机端，需要极低延迟地解释用户听到的内容。
+    要求：
+    - 输出尽量短（< 120 字）
+    - 直接给出含义 / 关键信息 / 名词解释
+    - 不问反问句，不做闲聊
+  user_template: "用户听到：{{content}}"
+
+memory:
+  enabled: true
+  max_turns: 6
+
+timeout_secs: 30

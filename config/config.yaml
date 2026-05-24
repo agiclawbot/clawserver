@@ -1,0 +1,99 @@
+# ============================================================================
+# ClawServer 主配置
+# - 全局只读共享 (arc-swap)，运行时无锁热替换
+# - 任务配置存放在 config/tasks/*.yaml，按 task_type 自动注册
+# ============================================================================
+
+server:
+  bind: "0.0.0.0:8080"
+  # Worker 数量建议与物理核心数一致；0 表示自动 (num_cpus::get)
+  worker_threads: 0
+  # 单连接最大请求体（SSE 请求通常极小）
+  body_limit_bytes: 1048576
+  # 请求整体超时（秒）——不含 SSE 长连接 keep-alive
+  request_timeout_secs: 60
+  # SSE 心跳间隔（秒），防止中间件/LB 断链
+  sse_keep_alive_secs: 15
+  # 优雅关闭等待秒数
+  graceful_shutdown_secs: 30
+  # TCP keepalive
+  tcp_keepalive_secs: 75
+  tcp_nodelay: true
+
+# 全局限流（令牌桶，无锁）
+rate_limit:
+  enabled: true
+  # 每秒放行 QPS
+  per_second: 50000
+  # 突发桶大小
+  burst: 100000
+
+# 熔断器（按下游命名，如 "llm.openai"）
+circuit_breaker:
+  # 滚动窗口内失败率阈值 (0-1)
+  failure_ratio: 0.5
+  # 最小采样数，低于该采样数不触发熔断
+  min_samples: 50
+  # 滚动窗口（秒）
+  rolling_window_secs: 10
+  # 打开状态持续（秒），之后进入半开
+  open_duration_secs: 15
+  # 半开状态放行探测数
+  half_open_max_probes: 5
+
+# Redis（支持单机 / 集群 / 哨兵 — fred 自动识别）
+redis:
+  # 多节点 = 集群；单节点 URL 也可
+  urls:
+    - "redis://127.0.0.1:6379"
+  # 连接池大小；长连接 10w 场景建议 >= workers * 4
+  pool_size: 64
+  # 连接/命令超时 (ms)
+  connect_timeout_ms: 3000
+  command_timeout_ms: 2000
+  # 会话 Key 前缀
+  session_prefix: "claw:sess:"
+  # 会话 TTL（秒）
+  session_ttl_secs: 7200
+  # 记忆最大轮数（超出自动裁剪）
+  memory_max_turns: 40
+
+# LLM 客户端池（OpenAI 兼容协议；可在任务配置覆盖）
+llm:
+  # 默认服务商
+  default_provider: "openai"
+  providers:
+    openai:
+      base_url: "http://127.0.0.1:9090/v1"
+      api_key_env: "OPENAI_API_KEY"
+      # 每宿主最大空闲连接（reqwest 连接池）
+      pool_idle_per_host: 64
+      pool_max_idle_secs: 90
+      # 单请求超时（SSE 流式允许更长）
+      request_timeout_secs: 120
+      connect_timeout_secs: 5
+      # 默认模型
+      default_model: "gpt-4o-mini"
+    # 可再添加 azure / deepseek / ollama / qwen 等
+  # 调用重试
+  retry:
+    max_attempts: 3
+    base_backoff_ms: 100
+    max_backoff_ms: 2000
+
+# 异步内存队列（背压，防止突发冲垮下游）
+queue:
+  # 单任务 channel 缓冲
+  capacity: 4096
+  # 入队超时（ms），超时直接快速失败
+  enqueue_timeout_ms: 50
+
+# 内部异步缓冲（channel 容量）
+# 过大增内存，过小增背压等待；256 适合作业长文本输出场景
+buffer:
+  channel_size: 256
+
+# 可观测性
+observability:
+  log_level: "info,clawserver=debug"
+  log_format: "json"      # json | pretty

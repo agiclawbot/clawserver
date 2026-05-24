@@ -1,0 +1,10 @@
+target/
+.git/
+.gitignore
+.gitattributes
+*.md
+.DS_Store
+.idea/
+.vscode/
+.env
+dump.rdb

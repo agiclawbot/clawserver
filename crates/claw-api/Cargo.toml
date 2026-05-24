@@ -1,0 +1,57 @@
+[package]
+name = "claw-api"
+description = "ClawServer HTTP API + axum 路由 + SSE 流式 + ops endpoints"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+claw-core   = { path = "../claw-core", features = ["ax-response"] }
+claw-llm    = { path = "../claw-llm" }
+claw-config = { path = "../claw-config" }
+claw-agent  = { path = "../claw-agent" }
+
+serde      = { workspace = true }
+serde_json = { workspace = true }
+thiserror  = { workspace = true }
+tracing    = { workspace = true }
+
+# 异步运行时（需要 signal + net 用于绑定 + 优雅关闭）
+tokio = { version = "1.38", features = [
+    "rt-multi-thread",
+    "macros",
+    "net",
+    "signal",
+    "sync",
+    "time",
+] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+futures = { workspace = true }
+
+# Axum + Tower 生态
+axum = { version = "0.7", features = ["macros", "http2", "tracing"] }
+tower = { version = "0.4", features = ["limit", "timeout", "load-shed", "buffer", "util"] }
+tower-http = { version = "0.5", features = [
+    "trace",
+    "timeout",
+    "limit",
+    "cors",
+    "compression-gzip",
+    "request-id",
+    "sensitive-headers",
+] }
+tower_governor = "0.4"
+governor = "0.6"
+
+pin-project-lite = "0.2"
+ulid = "1"
+
+# Prometheus 指标
+prometheus = "0.13"
+
+[dev-dependencies]
+tempfile = "3"
+async-trait = { workspace = true }

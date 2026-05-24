@@ -1,0 +1,101 @@
+# ---------------------------------------------------------------------------
+# Workspace 根：根 crate 已退化为纯 bin（仅装配 + main.rs）。
+# 全部业务实现已下沉到 crates/* 子 crate：
+#   claw-core / claw-llm / claw-config / claw-agent / claw-api / claw-cli
+# ---------------------------------------------------------------------------
+[workspace]
+members = [".", "crates/*"]
+resolver = "2"
+
+[workspace.package]
+version       = "0.1.0"
+edition       = "2021"
+rust-version  = "1.75"
+authors       = ["ClawServer Contributors"]
+license       = "Apache-2.0"
+repository    = "https://github.com/clawserver/clawserver"
+
+# 全局共享依赖版本：子 crate 以 `dep = { workspace = true }` 引用。
+[workspace.dependencies]
+serde       = { version = "1", features = ["derive", "rc"] }
+serde_json  = { version = "1", features = ["raw_value"] }
+thiserror   = "1"
+async-trait = "0.1"
+tokio       = { version = "1.38", features = ["sync", "macros", "rt"] }
+tracing     = "0.1"
+futures     = "0.3"
+
+[package]
+name = "clawserver"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["ClawServer Contributors"]
+description = "High-concurrency, fully configurable open-source AI Agent server built with adk-rust style architecture"
+license = "Apache-2.0"
+repository = "https://github.com/clawserver/clawserver"
+readme = "README.md"
+
+# ---------------------------------------------------------------------------
+# 发布级优化：面向 10 万并发长连接场景，裁剪 panic 展开、开启 LTO、单编译单元
+# ---------------------------------------------------------------------------
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+debug = false
+incremental = false
+overflow-checks = false
+
+[profile.dev]
+opt-level = 1
+
+# ---------------------------------------------------------------------------
+# 根 crate 现仅作为 bin 装配子 crate，不再持有任何业务实现。
+# 仅引入用于「装配 + 启动」必需的依赖：
+#   - 子 crate（claw-core / claw-llm / claw-config / claw-agent / claw-api）
+#   - tokio 多线程 runtime（手动构造）
+#   - tracing 初始化
+# ---------------------------------------------------------------------------
+[dependencies]
+claw-core   = { path = "crates/claw-core", features = ["ax-response", "yaml", "tools-http"] }
+claw-llm    = { path = "crates/claw-llm" }
+claw-config = { path = "crates/claw-config" }
+claw-agent  = { path = "crates/claw-agent" }
+claw-api    = { path = "crates/claw-api" }
+
+
+# 多线程 tokio runtime（main 手动构造）
+tokio = { version = "1.38", features = [
+    "rt-multi-thread",
+    "macros",
+    "signal",
+    "time",
+] }
+
+# 日志
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+
+# 工具
+num_cpus = "1"
+
+[[bin]]
+name = "clawserver"
+path = "src/main.rs"
+
+# ---------------------------------------------------------------------------
+# examples/ 仅在 `cargo run --example` / `cargo check --all-targets` 时编译，
+# 不进入 release 二进制；这里单列出以避免污染根 bin 的依赖图。
+# ---------------------------------------------------------------------------
+[dev-dependencies]
+axum        = { version = "0.7", features = ["macros"] }
+futures     = "0.3"
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+
+[[example]]
+name = "mock_llm"
+path = "examples/mock_llm.rs"

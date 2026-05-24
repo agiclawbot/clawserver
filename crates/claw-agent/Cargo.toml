@@ -1,0 +1,45 @@
+[package]
+name = "claw-agent"
+description = "ClawServer Agent 引擎：TaskRegistry + SessionMemory(Redis) + ReAct 循环"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+claw-core   = { path = "../claw-core", features = ["yaml"] }
+claw-llm    = { path = "../claw-llm" }
+claw-config = { path = "../claw-config" }
+
+serde      = { workspace = true }
+serde_json = { workspace = true }
+thiserror  = { workspace = true }
+tracing    = { workspace = true }
+
+# 异步运行时（仅需 sync + macros + rt；不强制 multi-thread）
+tokio        = { version = "1.38", features = ["rt", "sync", "macros", "time"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+futures      = { workspace = true }
+async-trait  = { workspace = true }
+
+pin-project-lite = "0.2"
+
+# Redis 异步客户端
+fred = { version = "9.2", default-features = false, features = [
+    "enable-rustls",
+    "metrics",
+    "i-std",
+    "i-hashes",
+    "i-keys",
+    "i-lists",
+    "i-scripts",
+    "i-client",
+] }
+
+[dev-dependencies]
+claw-core = { path = "../claw-core", features = ["yaml"] }
+tokio     = { version = "1.38", features = ["rt", "macros", "time", "sync"] }
+serde_json = { workspace = true }
+serde_yaml = "0.9"

@@ -1,0 +1,26 @@
+# 知识问答（单轮 / 无记忆）
+name: query
+description: "基于知识的一次性问答"
+enabled: true
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.2
+  top_p: 0.8
+  max_tokens: 1024
+  stream: true
+
+prompt:
+  system: |
+    你是精确的知识问答引擎。请给出简明、可验证的答案；
+    若信息不足，请明确回答"未知"。
+  user_template: |
+    问题：{{content}}
+    请直接给出答案。
+
+memory:
+  enabled: false
+  max_turns: 0
+
+timeout_secs: 60

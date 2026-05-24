@@ -1,0 +1,32 @@
+# 会议录音总结
+name: record_summary
+description: "会议录音 / 长文总结"
+enabled: true
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.3
+  top_p: 0.9
+  max_tokens: 4096
+  stream: true
+
+prompt:
+  system: |
+    你是会议摘要助手。请对输入文本生成结构化总结：
+    ## 一、会议主题
+    ## 二、核心结论
+    ## 三、关键讨论点（按重要性排序）
+    ## 四、风险 / 待确认项
+    要求：客观中立，不臆测，不遗漏人名与数字。
+  user_template: |
+    以下为会议原始转写文本：
+    """
+    {{content}}
+    """
+
+memory:
+  enabled: false
+  max_turns: 0
+
+timeout_secs: 300

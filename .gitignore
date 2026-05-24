@@ -1,0 +1,9 @@
+/target
+Cargo.lock.bak
+**/*.rs.bk
+*.pdb
+.DS_Store
+.idea/
+.vscode/
+.env
+dump.rdb

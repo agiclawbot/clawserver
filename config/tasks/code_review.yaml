@@ -1,0 +1,36 @@
+# ReAct 模式示例：代码审查
+# 演示 Phase 1 (ReAct + Tool) + Phase 2 (Skill) 协同工作。
+#
+# - mode: react      → 启用 ReAct 多轮循环
+# - skill: code_reviewer → 注入 config/skills/code_reviewer/instruction.md 到 system
+# - tools: 留空    → 沿用 skill.manifest.tools 的白名单
+# - max_iterations  → 最多 6 轮 thought->tool->observation 循环
+
+name: code_review
+description: "代码审查 (ReAct + code_reviewer skill)"
+enabled: true
+
+mode: react
+skill: code_reviewer
+tools: []
+max_iterations: 6
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.2
+  top_p: 0.9
+  max_tokens: 2048
+  stream: true
+  fallback: []
+
+prompt:
+  # skill.instruction 已经包含角色与流程；这里仅放任务级补充。
+  system: ""
+  user_template: "{{content}}"
+
+memory:
+  enabled: true
+  max_turns: 10
+
+timeout_secs: 120

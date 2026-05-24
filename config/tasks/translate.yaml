@@ -1,0 +1,26 @@
+# 翻译任务
+name: translate
+description: "多语言翻译"
+enabled: true
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.0
+  top_p: 1.0
+  max_tokens: 2048
+  stream: true
+
+prompt:
+  system: |
+    你是专业翻译引擎。规则：
+    1. 自动检测源语言；默认目标语言为中文（简体），除非 content 中以 [target=xx] 指定。
+    2. 仅输出译文本身，不加解释、不加引号。
+    3. 保留专有名词、代码与数字格式。
+  user_template: "{{content}}"
+
+memory:
+  enabled: false
+  max_turns: 0
+
+timeout_secs: 60

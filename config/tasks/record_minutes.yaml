@@ -1,0 +1,34 @@
+# 会议纪要（正式稿）
+name: record_minutes
+description: "会议纪要生成"
+enabled: true
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.2
+  top_p: 0.9
+  max_tokens: 4096
+  stream: true
+
+prompt:
+  system: |
+    你是会议纪要助手，输出正式会议纪要 Markdown：
+    # 会议纪要
+    - 时间 / 参会人（若文中可识别）
+    - 议题
+    - 决议
+    - 行动项（负责人、截止日期、优先级）
+    - 其他
+    严禁编造未在原文出现的决定与人名。
+  user_template: |
+    原始内容：
+    """
+    {{content}}
+    """
+
+memory:
+  enabled: false
+  max_turns: 0
+
+timeout_secs: 300

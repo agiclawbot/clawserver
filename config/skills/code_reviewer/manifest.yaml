@@ -1,0 +1,19 @@
+# 示例 Skill：code_reviewer
+# 启动时由 SkillRegistry::load_from_dir 扫描装载。
+# Task 通过 `skill: code_reviewer` 引用本技能。
+
+name: code_reviewer
+version: "0.1.0"
+description: "代码审查技能：分析 diff / 文件，给出可执行的改进建议。"
+
+# 工具白名单：当 task.tools 为空时，运行期使用本字段。
+# 这些工具名必须在 ToolRegistry 中已注册。
+tools:
+  - time_now
+  - http_get
+  - web_search
+
+# 默认参数（task 未显式覆盖时使用）。
+defaults:
+  temperature: 0.2
+  max_iterations: 6

@@ -1,0 +1,45 @@
+[package]
+name = "claw-core"
+description = "ClawServer 核心契约层：纯数据模型 + trait 抽象，零业务依赖。"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+serde_yaml  = { version = "0.9", optional = true }
+thiserror   = { workspace = true }
+async-trait = { workspace = true }
+tracing     = { workspace = true }
+rand        = "0.8"
+# 仅同步原语，不引入 tokio runtime
+tokio = { workspace = true, features = ["sync"] }
+# 可选 axum 适配：开启后为 AppError 提供 IntoResponse。
+# server crate 会开这个 feature；cli / agent / tool 等不开，不会被迫拉进 axum。
+axum = { version = "0.7", default-features = false, features = ["json"], optional = true }
+http = { version = "1", optional = true }
+
+# tools-http 启用 http_get 内置工具
+reqwest = { version = "0.12", default-features = false, features = [
+    "rustls-tls",
+    "gzip",
+], optional = true }
+
+[features]
+default = []
+# 为 AppError 提供 axum::IntoResponse 实现
+ax-response = ["dep:axum", "dep:http"]
+# 提供 From<serde_yaml::Error> 转换
+yaml = ["dep:serde_yaml"]
+# 启用 http_get 内置工具（引入 reqwest）
+tools-http = ["dep:reqwest"]
+
+# 本 crate unit/integration test 依赖：tokio runtime + macros
+[dev-dependencies]
+tokio     = { workspace = true, features = ["sync", "rt", "macros", "time"] }
+tempfile  = "3"
+serde_yaml = "0.9"

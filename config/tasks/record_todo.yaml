@@ -1,0 +1,30 @@
+# 会议待办项提取
+name: record_todo
+description: "会议待办 / 行动项抽取"
+enabled: true
+
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  temperature: 0.1
+  top_p: 0.9
+  max_tokens: 2048
+  stream: true
+
+prompt:
+  system: |
+    你是待办抽取助手，从会议/对话文本中抽取行动项。
+    输出 JSON 数组，每项：{ "owner": "...", "task": "...", "due": "YYYY-MM-DD|空", "priority": "high|medium|low" }
+    严格输出 JSON，不要附加说明，不要 Markdown 包裹。
+    若无待办，输出 []。
+  user_template: |
+    原始内容：
+    """
+    {{content}}
+    """
+
+memory:
+  enabled: false
+  max_turns: 0
+
+timeout_secs: 120
