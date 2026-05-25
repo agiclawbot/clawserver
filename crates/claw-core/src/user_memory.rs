@@ -8,6 +8,7 @@
 //! | `AGENT.md` | 角色定义、操作手册 | "你是资深 Rust 工程师" |
 //! | `SOULD.md` | 语气、行为规范 | "回答简洁专业，带代码示例" |
 //! | `RULES.md` | 硬性规则 | "禁止使用 unsafe 代码" |
+//! | `MEMORY.md` | **长期事实库**（Agent 在对话中积累更新） | "用户偏好流式响应" |
 //! | `USER.md`  | 用户画像 | "用户是后端开发者，熟悉 axum" |
 //!
 //! 加载逻辑参考 `skill::load_from_dir`，启动期扫描 + 内存缓存，零运行时开销。
@@ -22,6 +23,10 @@ use crate::error::AppResult;
 ///
 /// 每个字段对应 `config/users/{user_id}/` 下的一个 Markdown 文件。
 /// 文件不存在时对应字段为 `None`，不注入 prompt。
+///
+/// 与 AGENT.md/SOULD.md 等静态文件不同，MEMORY.md 是 **动态积累** 的——
+/// Agent 在对话过程中通过 `memory_update` 工具不断追加或修正内容，
+/// 持久化到磁盘，后续对话自动加载。
 #[derive(Debug, Clone, Default)]
 pub struct UserMemory {
     /// 角色定义 / 操作手册（AGENT.md）
@@ -30,14 +35,19 @@ pub struct UserMemory {
     pub soul: Option<String>,
     /// 硬性规则（RULES.md）
     pub rules: Option<String>,
+    /// 长期事实库：Agent 对话中积累的用户偏好、决策记录等（MEMORY.md）
+    pub memory: Option<String>,
     /// 用户画像（USER.md）
     pub user_profile: Option<String>,
 }
 
 impl UserMemory {
     /// 将所有存在的记忆文件内容拼成一个字符串，用 Markdown 分隔。
+    ///
+    /// 拼接顺序：AGENT.md → SOULD.md → RULES.md → USER.md → MEMORY.md
+    /// MEMORY.md 放在最后，因为它包含最具体的事实，容易被模型记住。
     pub fn to_prompt(&self) -> String {
-        let mut parts: Vec<&str> = Vec::with_capacity(4);
+        let mut parts: Vec<&str> = Vec::with_capacity(5);
         if let Some(ref s) = self.agent {
             parts.push(s.as_str());
         }
@@ -48,6 +58,9 @@ impl UserMemory {
             parts.push(s.as_str());
         }
         if let Some(ref s) = self.user_profile {
+            parts.push(s.as_str());
+        }
+        if let Some(ref s) = self.memory {
             parts.push(s.as_str());
         }
         parts.join("\n\n---\n\n")
@@ -62,7 +75,8 @@ impl UserMemory {
 /// ├── u001/
 /// │   ├── AGENT.md
 /// │   ├── SOULD.md
-/// │   └── RULES.md
+/// │   ├── RULES.md
+/// │   └── MEMORY.md       ← 动态积累，Agent 可更新
 /// └── u002/
 ///     ├── AGENT.md
 ///     └── USER.md
@@ -90,6 +104,7 @@ pub fn load_all_users(users_dir: &Path) -> AppResult<Arc<HashMap<String, UserMem
             agent: read_file_if_exists(&dir.join("AGENT.md")),
             soul: read_file_if_exists(&dir.join("SOULD.md")),
             rules: read_file_if_exists(&dir.join("RULES.md")),
+            memory: read_file_if_exists(&dir.join("MEMORY.md")),
             user_profile: read_file_if_exists(&dir.join("USER.md")),
         };
 
@@ -97,6 +112,7 @@ pub fn load_all_users(users_dir: &Path) -> AppResult<Arc<HashMap<String, UserMem
         if memory.agent.is_some()
             || memory.soul.is_some()
             || memory.rules.is_some()
+            || memory.memory.is_some()
             || memory.user_profile.is_some()
         {
             map.insert(user_id, memory);
@@ -133,12 +149,14 @@ mod tests {
         fs::create_dir_all(users_dir.join("u001")).unwrap();
         fs::write(users_dir.join("u001/AGENT.md"), "你是 Rust 专家").unwrap();
         fs::write(users_dir.join("u001/SOULD.md"), "回答要简洁").unwrap();
+        fs::write(users_dir.join("u001/MEMORY.md"), "用户偏好流式响应").unwrap();
 
         let map = load_all_users(&users_dir).unwrap();
         assert_eq!(map.len(), 1);
         let u = map.get("u001").unwrap();
         assert_eq!(u.agent.as_deref(), Some("你是 Rust 专家"));
         assert_eq!(u.soul.as_deref(), Some("回答要简洁"));
+        assert_eq!(u.memory.as_deref(), Some("用户偏好流式响应"));
         assert!(u.rules.is_none());
     }
 
@@ -158,11 +176,28 @@ mod tests {
             agent: Some("# Agent\n你是助手".into()),
             soul: Some("## Soul\n友好".into()),
             rules: None,
+            memory: Some("## 记忆\n用户要中文回答".into()),
             user_profile: None,
         };
         let prompt = m.to_prompt();
         assert!(prompt.contains("# Agent\n你是助手"));
         assert!(prompt.contains("## Soul\n友好"));
+        assert!(prompt.contains("## 记忆\n用户要中文回答"));
+        // memory 应该在最后
+        assert!(prompt.ends_with("用户要中文回答"));
         assert!(prompt.contains("---"));
+    }
+
+    #[test]
+    fn memory_only_user() {
+        let m = UserMemory {
+            agent: None,
+            soul: None,
+            rules: None,
+            memory: Some("用户喜欢简洁回答".into()),
+            user_profile: None,
+        };
+        let prompt = m.to_prompt();
+        assert_eq!(prompt, "用户喜欢简洁回答");
     }
 }
