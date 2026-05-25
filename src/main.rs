@@ -124,8 +124,15 @@ async fn async_main(
     };
     tracing::info!(skills = skills.len(), "skill registry ready");
 
+    // 6.3) 用户分层记忆（从 config/users/{user_id}/ 加载）
+    let users_dir = config_dir.join("users");
+    let user_memories = claw_core::user_memory::load_all_users(&users_dir)?;
+    tracing::info!(users = user_memories.len(), "user memory loaded");
+
     // 7) Agent 引擎
-    let engine = AgentEngine::new(cfg_handle.clone(), tasks, memory, llm, tools, skills);
+    let engine = AgentEngine::new(
+        cfg_handle.clone(), tasks, memory, llm, tools, skills, user_memories,
+    );
 
     // 8) 启动 HTTP
     claw_api::serve(engine, cfg_handle).await

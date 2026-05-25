@@ -16,8 +16,8 @@ tools: []
 max_iterations: 6
 
 llm:
-  provider: openai
-  model: gpt-4o-mini
+  provider: deepseek
+  model: deepseek-chat
   temperature: 0.2
   top_p: 0.9
   max_tokens: 2048

@@ -31,7 +31,7 @@
 //!
 //! ## 无锁设计
 //!
-//! 所有共享数据为 `Arc<...>`——TaskRegistry / ToolRegistry / LlmPool / SkillRegistry
+//! 所有共享数据为 `Arc<...>`——TaskRegistry / ToolRegistry / LlmPool / SkillRegistry / UserMemory
 //! 均是启动期一次构建，运行期只读。不构造任何 Mutex / RwLock。
 
 use std::sync::Arc;
@@ -49,6 +49,7 @@ use claw_core::llm::{LlmDelta, LlmRequest};
 use claw_core::tool::ToolRegistry;
 use claw_llm::LlmPool;
 use claw_core::skill::{Skill, SkillRegistry};
+use claw_core::user_memory::UserMemory;
 
 use crate::memory::SessionStore;
 use crate::react::{run_react, ReactConfig, ReactEvent};
@@ -76,6 +77,7 @@ pub struct AgentInput {
 /// | `llm` | `Arc<LlmPool>` | `LlmPool::build()` | 按 provider 获取 LLM 客户端 |
 /// | `tools` | `Arc<ToolRegistry>` | `build_tool_registry()` | 所有已注册工具 |
 /// | `skills` | `Arc<SkillRegistry>` | 从文件加载 | Skill 指令 + 工具白名单 |
+/// | `user_memories` | `Arc<HashMap<String, UserMemory>>` | 从文件加载 | 用户分层记忆 |
 /// | `channel_buffer` | `usize` | `buffer.channel_size` | 内部 mpsc 缓冲大小 |
 pub struct AgentEngine {
     cfg: ConfigHandle,
@@ -84,6 +86,7 @@ pub struct AgentEngine {
     llm: Arc<LlmPool>,
     tools: Arc<ToolRegistry>,
     skills: Arc<SkillRegistry>,
+    user_memories: Arc<std::collections::HashMap<String, UserMemory>>,
     channel_buffer: usize,
 }
 
@@ -95,6 +98,7 @@ impl AgentEngine {
         llm: Arc<LlmPool>,
         tools: Arc<ToolRegistry>,
         skills: Arc<SkillRegistry>,
+        user_memories: Arc<std::collections::HashMap<String, UserMemory>>,
     ) -> Arc<Self> {
         let channel_buffer = cfg.load().buffer.channel_size;
         Arc::new(Self {
@@ -104,6 +108,7 @@ impl AgentEngine {
             llm,
             tools,
             skills,
+            user_memories,
             channel_buffer,
         })
     }
@@ -124,13 +129,20 @@ impl AgentEngine {
             .as_deref()
             .and_then(|name| self.skills.get(name));
 
-        // 1) 组装消息（系统 + skill.instruction + 历史记忆 + 本轮 user）
+        // 可选用户分层记忆：注入角色定义 / 行为规则 / 用户画像到 system
+        let user_memory = self
+            .user_memories
+            .get(&input.user_id)
+            .map(|m| m.to_prompt());
+
+        // 1) 组装消息（系统 + skill.instruction + user_memory + 历史记忆 + 本轮 user）
         // 根据 max_turns 预估容量以减少运行时 reallocation
         let estimated_capacity = 2 + task.memory.max_turns * 2; // system + user + history
         let mut messages: Vec<ChatMessage> = Vec::with_capacity(estimated_capacity);
         let combined_system = combine_system(
             &task.prompt.system,
             skill.as_deref().map(|s| s.instruction.as_str()),
+            user_memory.as_deref(),
         );
         if !combined_system.is_empty() {
             messages.push(ChatMessage::system(combined_system));
@@ -397,13 +409,25 @@ fn render_template(tmpl: &str, content: &str) -> String {
     tmpl.replace("{{content}}", content)
 }
 
-/// 合并 system prompt：skill.instruction 在前，task.prompt.system 在后。
-fn combine_system(task_system: &str, skill_instr: Option<&str>) -> String {
-    match (skill_instr.unwrap_or("").trim(), task_system.trim()) {
-        ("", "") => String::new(),
-        ("", t) => t.to_string(),
-        (s, "") => s.to_string(),
-        (s, t) => format!("{s}\n\n{t}"),
+/// 合并 system prompt，优先级：skill.instruction > user_memory > task_system。
+fn combine_system(
+    task_system: &str,
+    skill_instr: Option<&str>,
+    user_memory: Option<&str>,
+) -> String {
+    let parts: Vec<&str> = [
+        skill_instr.unwrap_or("").trim(),
+        user_memory.unwrap_or("").trim(),
+        task_system.trim(),
+    ]
+    .into_iter()
+    .filter(|s| !s.is_empty())
+    .collect();
+
+    if parts.is_empty() {
+        String::new()
+    } else {
+        parts.join("\n\n")
     }
 }
 

@@ -4,8 +4,8 @@ description: "通用多轮对话"
 enabled: true
 
 llm:
-  provider: openai
-  model: gpt-4o-mini
+  provider: deepseek
+  model: deepseek-chat
   temperature: 0.7
   top_p: 0.9
   max_tokens: 2048

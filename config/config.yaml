@@ -61,11 +61,11 @@ redis:
 # LLM 客户端池（OpenAI 兼容协议；可在任务配置覆盖）
 llm:
   # 默认服务商
-  default_provider: "openai"
+  default_provider: "deepseek"
   providers:
-    openai:
-      base_url: "http://127.0.0.1:9090/v1"
-      api_key_env: "OPENAI_API_KEY"
+    deepseek:
+      base_url: "https://api.deepseek.com/v1"
+      api_key_env: "DEEPSEEK_API_KEY"
       # 每宿主最大空闲连接（reqwest 连接池）
       pool_idle_per_host: 64
       pool_max_idle_secs: 90
@@ -73,8 +73,8 @@ llm:
       request_timeout_secs: 120
       connect_timeout_secs: 5
       # 默认模型
-      default_model: "gpt-4o-mini"
-    # 可再添加 azure / deepseek / ollama / qwen 等
+      default_model: "deepseek-chat"
+    # 可再添加 azure / openai / ollama / qwen 等
   # 调用重试
   retry:
     max_attempts: 3

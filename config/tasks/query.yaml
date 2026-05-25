@@ -4,8 +4,8 @@ description: "基于知识的一次性问答"
 enabled: true
 
 llm:
-  provider: openai
-  model: gpt-4o-mini
+  provider: deepseek
+  model: deepseek-chat
   temperature: 0.2
   top_p: 0.8
   max_tokens: 1024

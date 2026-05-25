@@ -4,8 +4,8 @@ description: "耳机实时语音理解与解释"
 enabled: true
 
 llm:
-  provider: openai
-  model: gpt-4o-mini
+  provider: deepseek
+  model: deepseek-chat
   temperature: 0.3
   top_p: 0.9
   max_tokens: 512

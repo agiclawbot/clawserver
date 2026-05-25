@@ -124,7 +124,10 @@ async fn build_test_engine() -> (Arc<AgentEngine>, tempfile::TempDir) {
     let skills: Arc<claw_core::skill::SkillRegistry> = Arc::new(claw_core::skill::SkillRegistry::new());
 
 
-    let engine = AgentEngine::new(cfg_handle, tasks, memory as Arc<dyn SessionStore>, llm, tools, skills);
+    use std::collections::HashMap;
+    let user_memories: Arc<HashMap<String, claw_core::user_memory::UserMemory>> = Arc::new(HashMap::new());
+
+    let engine = AgentEngine::new(cfg_handle, tasks, memory as Arc<dyn SessionStore>, llm, tools, skills, user_memories);
     (engine, dir) // TempDir 保持存活
 }
 

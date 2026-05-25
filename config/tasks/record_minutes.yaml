@@ -4,8 +4,8 @@ description: "会议纪要生成"
 enabled: true
 
 llm:
-  provider: openai
-  model: gpt-4o-mini
+  provider: deepseek
+  model: deepseek-chat
   temperature: 0.2
   top_p: 0.9
   max_tokens: 4096

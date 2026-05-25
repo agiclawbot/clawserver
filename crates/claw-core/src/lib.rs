@@ -21,6 +21,7 @@
 //! | [`util`] | `breaker::CircuitBreaker` / `retry::backoff` — 熔断与重试 | 低 |
 //! | [`tools`] | 内置工具实现（TimeNow / HttpGet / WebSearch） | 中 |
 //! | [`skill`] | `SkillManifest` / `SkillRegistry` / `load_from_dir` | 低 |
+//! | [`user_memory`] | `UserMemory` / `load_all_users` — 用户分层记忆 | 低 |
 //! | [`test_utils`] | `MockProvider` / `MockTool` — 测试 mock 实现 | 极低 |
 //!
 //! ## 扩展指南
@@ -40,6 +41,8 @@ pub mod llm;
 pub mod util;
 
 pub mod skill;
+
+pub mod user_memory;
 
 pub mod test_utils;
 
