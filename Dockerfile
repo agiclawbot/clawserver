@@ -45,7 +45,7 @@ COPY --from=builder /tmp/clawctl   /usr/local/bin/clawctl
 # 默认配置（用户可通过 volume mount 覆盖）
 COPY config/ ./config/
 
-EXPOSE 8080
+EXPOSE 3385
 
 USER claw
 

@@ -1,9 +1,24 @@
-//! ClawServer 配置数据结构与加载。
+//! # 配置系统
 //!
-//! 分层说明：
-//! - **类型定义**（无条件编译）：AppConfig / ServerConfig / 子 config struct / TaskConfig 等
-//! - **加载逻辑**（`#[cfg(feature = "yaml")]`）：init_from_dir / ConfigHandle / 校验
-//! - 热重载已移除，ConfigHandle 只是 `Arc<AppConfig>` 的轻量包装
+//! 配置是**纯数据**（不包含业务行为），以 YAML 文件驱动系统行为：
+//!
+//! ```text
+//! config/config.yaml  ──→  AppConfig（全局参数）
+//! config/tasks/*.yaml ──→  TaskConfig（任务定义，按 name 索引）
+//! config/skills/*/    ──→  Skill（instruction.md + manifest.yaml）
+//! ```
+//!
+//! ## 分层说明
+//!
+//! - **类型定义**（无条件编译）：`AppConfig` / `ServerConfig` / 子 config struct / `TaskConfig` 等
+//! - **加载逻辑**（`#[cfg(feature = "yaml")]`）：`init_from_dir()` / `ConfigHandle` / 校验
+//! - 热重载已移除，`ConfigHandle` 只是 `Arc<AppConfig>` 的轻量包装
+//!
+//! ## 扩展配置项
+//!
+//! 1. 在本模块新增 struct / field
+//! 2. 加 `#[serde(default)]` 保证向后兼容
+//! 3. 在 `config.yaml` 对应位置写入值即可
 
 use std::collections::HashMap;
 use std::sync::Arc;

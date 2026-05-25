@@ -7,7 +7,7 @@ metadata:
 data:
   config.yaml: |
     server:
-      bind: "0.0.0.0:8080"
+      bind: "0.0.0.0:3385"
       worker_threads: 0
       body_limit_bytes: 1048576
       request_timeout_secs: 60

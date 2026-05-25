@@ -1,11 +1,33 @@
-//! Axum 高并发 HTTP Server。
+//! # Axum HTTP Server
 //!
-//! 设计亮点：
+//! 架构最外层——TCP 监听 + HTTP 路由 + 中间件栈。
+//!
+//! ## 路由表
+//!
+//! | 方法 | 路径 | Handler | 说明 |
+//! |------|------|---------|------|
+//! | POST | `/v1/agent/stream` | `agent_stream` | SSE 流式 Agent 调用（主入口） |
+//! | GET  | `/healthz` | `healthz` | 进程健康检查 |
+//! | GET  | `/readyz` | `readyz` | 依赖就绪检查（Redis + 任务） |
+//! | GET  | `/version` | `version` | 版本 + 任务列表 |
+//! | GET  | `/metrics` | `metrics_handler` | Prometheus 格式指标 |
+//!
+//! ## 中间件栈（自底向上）
+//!
+//! ```text
+//! TracingLayer       ← HTTP 日志
+//! CorsLayer          ← CORS 头
+//! CompressionLayer   ← 响应压缩
+//! RequestBodyLimit   ← 请求体大小限制
+//! GovernorLayer      ← 令牌桶限流（按 IP）
+//! MetricsMiddleware  ← Prometheus 指标采集（耗时 + 请求数 + 并发数）
+//! ```
+//!
+//! ## 设计要点
+//!
 //! - 单 `Router` + `State(Arc<AgentEngine>)`，所有 handler 零锁只读
-//! - `tower_governor` 令牌桶限流（无锁实现）
-//! - `tower_http::trace` 结构化 tracing
-//! - 优雅关闭：`signal::ctrl_c` + SIGTERM 双通道，drain in-flight 请求
-//! - `TcpListener` 显式打开 SO_REUSEADDR / TCP_NODELAY，配合 keepalive
+//! - 优雅关闭：`signal::ctrl_c` + SIGTERM 双通道
+//! - TCP_NODELAY + SO_REUSEADDR
 
 use std::net::SocketAddr;
 use std::sync::Arc;

@@ -1,18 +1,25 @@
-//! clawctl：ClawServer 命令行调试工具。
+//! # clawctl：ClawServer CLI 调试工具
 //!
-//! # 子命令树（骨架阶段，stub 实现）
-//! ```text
-//! clawctl
-//! ├── server     启动 HTTP 服务（Step 8 联通）
-//! ├── llm        LLM 调试 (chat / stream / ping)
-//! ├── tool       工具调试 (list / spec / invoke)
-//! ├── skill      Skill 调试 (list / show / validate)
-//! ├── agent      Agent 端到端 (run / trace / replay)
-//! ├── config     配置调试 (show / validate / tasks)
-//! └── bench      内置 micro-bench
-//! ```
+//! 独立于 HTTP 服务的命令行客户端，直接调用 LLM / Tool / Agent 等子系统，
+//! **不依赖 Redis**（Agent 的 ReAct 循环使用进程内状态）。
 //!
-//! 当前所有子命令打印 `[TODO] not implemented yet`，后续阶段逐步联通。
+//! ## 子命令
+//!
+//! | 命令 | 功能 | 需要配置 |
+//! |------|------|----------|
+//! | `llm chat` | 直接调用 LLM，测试 prompt / 模型 / 参数 | `config.yaml` |
+//! | `tool list/spec/invoke` | 工具注册表查询 + 调用测试 | `config.yaml` |
+//! | `agent run/trace` | 端到端 Agent 调试（Plain / ReAct） | `config.yaml` + `config/tasks/*.yaml` |
+//! | `config show` | 查看当前配置摘要 | `config.yaml` |
+//! | `skill list/show/validate` | Skill 系统调试 | `config/skills/*/` |
+//! | `server` | 启动完整 HTTP 服务（同 root bin） | `config.yaml` |
+//! | `bench` | 内置 micro-benchmark | — |
+//!
+//! ## 设计原则
+//!
+//! - **零 Redis 依赖**：调试时不需要启动 Redis
+//! - **最小 YAML 加载**：用 `yaml_cfg::AppConfigLite` 只解析需要的字段
+//! - **独立 ReAct**：cli 自带最小 ReAct 循环，不依赖 `claw_agent`，避免引入 Redis 依赖
 
 use std::path::PathBuf;
 

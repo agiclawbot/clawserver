@@ -1,6 +1,23 @@
-//! 全局错误模型（纯枚举）。
+//! # 全局错误模型
 //!
-//! 不依赖任何 HTTP / web 框架；HTTP 映射 (`IntoResponse`) 在 server crate 内单独实现。
+//! 系统的统一错误类型，所有子 crate 的 fallible 操作统一返回 `AppResult<T>`。
+//! 纯枚举 + thiserror 派生，**不依赖任何 HTTP/web 框架**。
+//!
+//! ## 何时使用哪种变体
+//!
+//! | 变体 | 语义 | 使用场景 |
+//! |------|------|----------|
+//! | `BadRequest` | 调用方错误 | 参数校验失败、非法请求 |
+//! | `TaskNotFound` | 任务类型不存在 | 请求了未定义的 task_type |
+//! | `RateLimited` | 被限流 | 令牌桶耗尽 |
+//! | `CircuitOpen` | 下游熔断 | LLM 调用被熔断器阻断 |
+//! | `Redis` | Redis 错误 | 连接/命令超时、OOM |
+//! | `Llm` | LLM 返回错误 | API key 无效、模型不存在 |
+//! | `Config` | 配置错误 | YAML 格式有误、字段缺失 |
+//! | `Io` | 系统 I/O 错误 | 文件读写失败 |
+//! | `Serde` | 序列化错误 | JSON/YAML 解析失败 |
+//! | `Internal` | 内部错误 | 运行时构造失败、不变量破坏 |
+//! | `Timeout` | 超时 | LLM 请求超时、队列满 |
 
 use thiserror::Error;
 

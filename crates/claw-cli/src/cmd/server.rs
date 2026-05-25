@@ -6,7 +6,7 @@ use super::Ctx;
 #[derive(ClapArgs, Debug)]
 pub struct Args {
     /// 自定义绑定地址
-    #[arg(long, default_value = "0.0.0.0:8080")]
+    #[arg(long, default_value = "0.0.0.0:3385")]
     pub bind: String,
 }
 

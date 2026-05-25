@@ -27,7 +27,7 @@ use tempfile::tempdir;
 /// 测试最小 YAML 配置（含一个 mock LLM provider）。
 const MINI_YAML: &str = r#"
 server:
-  bind: "0.0.0.0:8080"
+  bind: "0.0.0.0:3385"
   worker_threads: 0
   body_limit_bytes: 1048576
   request_timeout_secs: 30

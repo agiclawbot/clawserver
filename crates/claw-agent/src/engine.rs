@@ -1,11 +1,38 @@
-//! Agent 引擎（adk-rust 风格抽象）。
+//! # Agent 引擎：业务编排核心
 //!
-//! 职责：
-//! - 组合 TaskConfig + SessionMemory + LlmPool，把业务入参转为一次 LLM 调用
-//! - 返回 `LlmDelta` 流；SSE 层直接把流投递给客户端
-//! - 后台任务聚合 assistant 完整输出并写回 Redis（不阻塞响应）
+//! ## 职责
 //!
-//! 无锁：所有共享数据为 `Arc<...>`；运行期不构造任何 Mutex / RwLock。
+//! 位于架构的**编排层**，负责组合所有基础组件来完成一次"Agent 调用"：
+//!
+//! ```text
+//! POST /v1/agent/stream  →  AgentEngine::run_stream()
+//!                                   │
+//!                     ┌─────────────┼─────────────┐
+//!                     ▼             ▼             ▼
+//!               TaskRegistry  SessionMemory   LlmPool
+//!               (查 task cfg)  (加载历史消息)  (获取 ChatProvider)
+//!                     │             │             │
+//!                     └─────────────┼─────────────┘
+//!                                   ▼
+//!                          ReAct 循环 / Plain 流
+//!                                   │
+//!                                   ▼
+//!                          LlmDelta 流 → SSE 响应
+//!                                   │
+//!                         后台写回 Redis(不阻塞)
+//! ```
+//!
+//! ## 两种运行模式
+//!
+//! | mode | 行为 | 适用场景 |
+//! |------|------|----------|
+//! | `plain` | 单次 LLM 流式调用，零额外开销 | 聊天、翻译、总结 |
+//! | `react` | 多轮 Thought→Tool→Observation 循环 | 需要调用工具的任务 |
+//!
+//! ## 无锁设计
+//!
+//! 所有共享数据为 `Arc<...>`——TaskRegistry / ToolRegistry / LlmPool / SkillRegistry
+//! 均是启动期一次构建，运行期只读。不构造任何 Mutex / RwLock。
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -36,6 +63,20 @@ pub struct AgentInput {
     pub content: String,
 }
 
+/// ClawServer 核心编排引擎。
+///
+/// 持有全部运行期依赖，通过 `run_stream()` 对外提供 Agent 调用入口。
+///
+/// # 字段说明
+/// | 字段 | 类型 | 来源 | 作用 |
+/// |------|------|------|------|
+/// | `cfg` | `ConfigHandle` | 启动时加载 | 运行期只读配置快照 |
+/// | `tasks` | `Arc<TaskRegistry>` | `TaskRegistry::build()` | 任务 YAML 的只读索引 |
+/// | `memory` | `Arc<dyn SessionStore>` | Redis 或 Mock | 会话历史读写 |
+/// | `llm` | `Arc<LlmPool>` | `LlmPool::build()` | 按 provider 获取 LLM 客户端 |
+/// | `tools` | `Arc<ToolRegistry>` | `build_tool_registry()` | 所有已注册工具 |
+/// | `skills` | `Arc<SkillRegistry>` | 从文件加载 | Skill 指令 + 工具白名单 |
+/// | `channel_buffer` | `usize` | `buffer.channel_size` | 内部 mpsc 缓冲大小 |
 pub struct AgentEngine {
     cfg: ConfigHandle,
     tasks: Arc<TaskRegistry>,

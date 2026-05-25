@@ -23,10 +23,31 @@ use claw_config::{AppConfig, RedisConfig};
 use claw_core::chat::{ChatMessage, ChatRole};
 use claw_core::error::{AppError, AppResult};
 
-/// 会话存储抽象。生产用 `RedisSessionStore`，测试用 `InMemorySessionStore`。
+/// 会话存储抽象。
+///
+/// 定义会话读写契约，不依赖具体后端：
+/// - 生产环境 → [`RedisSessionStore`]（基于 fred Redis 池）
+/// - 单元测试 → [`InMemorySessionStore`]（进程内 HashMap）
+/// - 未来可扩展：SQLite、PostgreSQL、S3 等
+///
+/// # 存储语义
+///
+/// - 会话以 List 结构组织，最新消息在前（头插）
+/// - `load()` 返回按时间正序（旧→新）排列的消息序列
+/// - `append()` 原子写入一对 (user_msg, assistant_msg)，并在同一事务内
+///   执行 LTRIM 裁剪到 `max_turns` 轮
 #[async_trait]
 pub trait SessionStore: Send + Sync + 'static {
-    /// 读取最近 `max_turns` 轮历史，按时间正序返回。
+    /// 读取历史消息。
+    ///
+    /// 返回最近 `max_turns` 轮完整对话轮次，按时间**正序**（旧→新）排列，
+    /// 直接用作 LLM 请求的 `messages` 参数。
+    ///
+    /// # 参数
+    /// - `app_id` — 应用标识（多租户隔离用）
+    /// - `user_id` — 用户标识
+    /// - `session_id` — 会话标识
+    /// - `max_turns` — 最大轮数（超出自动裁剪）
     async fn load(
         &self,
         app_id: &str,
@@ -35,7 +56,17 @@ pub trait SessionStore: Send + Sync + 'static {
         max_turns: usize,
     ) -> AppResult<Vec<ChatMessage>>;
 
-    /// 追加一对 user / assistant 消息。
+    /// 追加一对消息到会话。
+    ///
+    /// 引擎在收到 LLM `Done` 事件后异步调用，不阻塞 SSE 响应流。
+    /// 写入成功后自动裁剪超出 `max_turns` 的旧消息。
+    ///
+    /// # 参数
+    /// - `app_id` — 应用标识
+    /// - `user_id` — 用户标识
+    /// - `session_id` — 会话标识
+    /// - `user_msg` — 用户本轮输入
+    /// - `assistant_msg` — 助手本轮完整输出（聚合后的 final text）
     async fn append(
         &self,
         app_id: &str,
@@ -45,7 +76,10 @@ pub trait SessionStore: Send + Sync + 'static {
         assistant_msg: &ChatMessage,
     ) -> AppResult<()>;
 
-    /// 健康检查（readyz 用）。
+    /// 健康检查（供 `/readyz` 端点使用）。
+    ///
+    /// RedisSessionStore: PING Redis
+    /// InMemorySessionStore: 始终 Ok
     async fn health(&self) -> AppResult<()>;
 }
 

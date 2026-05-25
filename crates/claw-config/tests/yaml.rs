@@ -11,7 +11,7 @@ use tempfile::tempdir;
 
 const MAIN_YAML: &str = r#"
 server:
-  bind: "0.0.0.0:8080"
+  bind: "0.0.0.0:3385"
   worker_threads: 0
   body_limit_bytes: 1048576
   request_timeout_secs: 30
@@ -100,7 +100,7 @@ fn task_mode_serde_react_lowercase() {
 #[test]
 fn parse_app_config_from_yaml() {
     let cfg: AppConfig = serde_yaml::from_str(MAIN_YAML).expect("parse");
-    assert_eq!(cfg.server.bind, "0.0.0.0:8080");
+    assert_eq!(cfg.server.bind, "0.0.0.0:3385");
     assert!(cfg.llm.providers.contains_key("openai"));
     assert_eq!(cfg.llm.default_provider, "openai");
     assert_eq!(cfg.llm.retry.max_attempts, 3);
