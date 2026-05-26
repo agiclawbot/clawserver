@@ -17,6 +17,7 @@ use tower::ServiceExt;
 use claw_agent::memory::SessionStore;
 use claw_agent::{AgentEngine, TaskRegistry};
 use claw_agent::skill::SkillRegistry;
+use claw_api::auth::ApiKeyStore;
 use claw_types::{init_from_dir, AppResult};
 use claw_llm::ChatMessage;
 use claw_llm::ToolRegistry;
@@ -103,8 +104,8 @@ mode: plain
 max_iterations: 1
 "#;
 
-/// 构造测试用 `Arc<AgentEngine>`。
-async fn build_test_engine() -> (Arc<AgentEngine>, tempfile::TempDir) {
+/// 构造测试用 `Arc<AgentEngine>` + `Arc<ApiKeyStore>`。
+async fn build_test_engine() -> (Arc<AgentEngine>, tempfile::TempDir, Arc<ApiKeyStore>) {
     let dir = tempdir().expect("tempdir");
 
     // 写 config.yaml
@@ -130,7 +131,8 @@ async fn build_test_engine() -> (Arc<AgentEngine>, tempfile::TempDir) {
         Arc::new(RwLock::new(HashMap::new()));
 
     let engine = AgentEngine::new(cfg_handle, tasks, memory as Arc<dyn SessionStore>, llm, tools, skills, user_memories);
-    (engine, dir) // TempDir 保持存活
+    let api_keys = ApiKeyStore::load(dir.path());
+    (engine, dir, api_keys) // TempDir 保持存活
 }
 
 // ---------------------------------------------------------------------------
@@ -165,8 +167,8 @@ impl SessionStore for MockSessionStore {
 
 #[tokio::test]
 async fn healthz_returns_ok() {
-    let (engine, _dir) = build_test_engine().await;
-    let router = claw_api::build_router(engine);
+    let (engine, _dir, api_keys) = build_test_engine().await;
+    let router = claw_api::build_router(engine, api_keys);
 
     let resp = router
         .oneshot(
@@ -184,8 +186,8 @@ async fn healthz_returns_ok() {
 
 #[tokio::test]
 async fn readyz_returns_json() {
-    let (engine, _dir) = build_test_engine().await;
-    let router = claw_api::build_router(engine);
+    let (engine, _dir, api_keys) = build_test_engine().await;
+    let router = claw_api::build_router(engine, api_keys);
 
     let resp = router
         .oneshot(
@@ -210,8 +212,8 @@ async fn readyz_returns_json() {
 
 #[tokio::test]
 async fn version_returns_json() {
-    let (engine, _dir) = build_test_engine().await;
-    let router = claw_api::build_router(engine);
+    let (engine, _dir, api_keys) = build_test_engine().await;
+    let router = claw_api::build_router(engine, api_keys);
 
     let resp = router
         .oneshot(
@@ -236,8 +238,8 @@ async fn version_returns_json() {
 
 #[tokio::test]
 async fn metrics_returns_prometheus() {
-    let (engine, _dir) = build_test_engine().await;
-    let router = claw_api::build_router(engine);
+    let (engine, _dir, api_keys) = build_test_engine().await;
+    let router = claw_api::build_router(engine, api_keys);
 
     // warm-up: middleware 需要先完成 observe() 才能看到 counter/histogram
     let _ = router
@@ -278,8 +280,8 @@ async fn metrics_returns_prometheus() {
 
 #[tokio::test]
 async fn unknown_route_returns_404() {
-    let (engine, _dir) = build_test_engine().await;
-    let router = claw_api::build_router(engine);
+    let (engine, _dir, api_keys) = build_test_engine().await;
+    let router = claw_api::build_router(engine, api_keys);
 
     let resp = router
         .oneshot(
@@ -299,8 +301,8 @@ async fn unknown_route_returns_404() {
 
 #[tokio::test]
 async fn post_with_invalid_json_returns_400() {
-    let (engine, _dir) = build_test_engine().await;
-    let router = claw_api::build_router(engine);
+    let (engine, _dir, api_keys) = build_test_engine().await;
+    let router = claw_api::build_router(engine, api_keys);
 
     let resp = router
         .oneshot(
@@ -319,8 +321,8 @@ async fn post_with_invalid_json_returns_400() {
 
 #[tokio::test]
 async fn post_missing_required_field_returns_400() {
-    let (engine, _dir) = build_test_engine().await;
-    let router = claw_api::build_router(engine);
+    let (engine, _dir, api_keys) = build_test_engine().await;
+    let router = claw_api::build_router(engine, api_keys);
 
     // 缺少 content 字段
     let body = json!({
@@ -346,8 +348,8 @@ async fn post_missing_required_field_returns_400() {
 
 #[tokio::test]
 async fn post_with_unknown_field_returns_400() {
-    let (engine, _dir) = build_test_engine().await;
-    let router = claw_api::build_router(engine);
+    let (engine, _dir, api_keys) = build_test_engine().await;
+    let router = claw_api::build_router(engine, api_keys);
 
     // deny_unknown_fields 应该 reject 未知字段
     let body = json!({

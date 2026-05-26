@@ -23,6 +23,7 @@
 //! - 单 `Router` + `State(Arc<AgentEngine>)`，所有 handler 零锁只读
 //! - 请求体校验在 DTO 层完成（长度限制 + 字段白名单），不会把脏数据传入引擎
 
+pub mod auth;
 pub mod dto;
 pub mod error;
 pub mod metrics;

@@ -93,7 +93,8 @@ async fn async_main(
     );
 
     // 8) 启动 HTTP
-    claw_api::serve(engine, cfg_handle).await
+    let api_keys = claw_api::auth::ApiKeyStore::load(&config_dir);
+    claw_api::serve(engine, cfg_handle, api_keys).await
 }
 
 fn build_tool_registry() -> Arc<ToolRegistry> {

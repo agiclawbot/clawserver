@@ -34,6 +34,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::{
+    Extension,
     extract::State,
     http::StatusCode,
     response::IntoResponse,
@@ -52,10 +53,11 @@ use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use claw_agent::AgentEngine;
 use claw_types::{AppError, AppResult, ConfigHandle};
 
+use crate::auth::ApiKeyStore;
 use crate::stream::agent_stream;
 
 /// 构建 Router（不含监听），便于集成测试。
-pub fn build_router(engine: Arc<AgentEngine>) -> Router {
+pub fn build_router(engine: Arc<AgentEngine>, api_keys: Arc<ApiKeyStore>) -> Router {
     let cfg = engine.config().load();
 
     // 初始化 Prometheus 指标注册表
@@ -75,7 +77,8 @@ pub fn build_router(engine: Arc<AgentEngine>) -> Router {
 
     let mut api_routes = Router::new()
         .route("/v1/agent/stream", post(agent_stream))
-        .with_state(engine.clone());
+        .with_state(engine.clone())
+        .layer(Extension(api_keys));
 
     if let Some(rl) = rate_layer {
         api_routes = api_routes.layer(rl);
@@ -114,7 +117,7 @@ pub fn build_router(engine: Arc<AgentEngine>) -> Router {
 }
 
 /// 启动并阻塞直到关闭信号。
-pub async fn serve(engine: Arc<AgentEngine>, cfg_handle: ConfigHandle) -> AppResult<()> {
+pub async fn serve(engine: Arc<AgentEngine>, cfg_handle: ConfigHandle, api_keys: Arc<ApiKeyStore>) -> AppResult<()> {
     let cfg = cfg_handle.load();
     let addr: SocketAddr = cfg
         .server
@@ -127,7 +130,7 @@ pub async fn serve(engine: Arc<AgentEngine>, cfg_handle: ConfigHandle) -> AppRes
         tracing::info!(addr = %std_listener, "clawserver listening");
     }
 
-    let router = build_router(engine.clone());
+    let router = build_router(engine.clone(), api_keys);
 
     // 优雅关闭
     let shutdown_secs = cfg.server.graceful_shutdown_secs;

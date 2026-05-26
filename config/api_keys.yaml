@@ -1,0 +1,23 @@
+# ============================================================================
+# API Key 配置：认证 + 租户 + app 白名单
+#
+# - 此文件存在即开启 API Key 认证（无此文件 = open 模式，不鉴权）
+# - 请求需携带 `Authorization: Bearer <key>` 头
+# - apps 为空 = 该租户可访问任意 app_id
+# - 多个 key 可为同一租户，便于轮换/隔离
+# ============================================================================
+
+keys:
+  # 开发环境示例 key
+  - key: "sk-dev"
+    tenant: "development"
+    apps:
+      - id: "dev-app"
+      - id: "test-app"
+
+  # 生产环境示例
+  - key: "sk-acme-prod"
+    tenant: "acme-corp"
+    apps:
+      - id: "chat-widget"
+      - id: "support-bot"

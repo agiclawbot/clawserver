@@ -10,7 +10,9 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use std::time::Duration;
 
+use axum::Extension;
 use axum::extract::State;
+use axum::http::HeaderMap;
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::Json;
 use futures::{stream, Stream, StreamExt};
@@ -19,6 +21,7 @@ use claw_agent::{AgentEngine, AgentInput};
 use claw_types::{AppError, ConfigHandle};
 use claw_llm::LlmDelta;
 
+use crate::auth::ApiKeyStore;
 use crate::dto::AgentRequest;
 use crate::error::{ApiError, ApiResult};
 
@@ -27,9 +30,25 @@ pub type SseItem = Result<Event, Infallible>;
 /// Axum handler：SSE 流式 Agent 调用。
 pub async fn agent_stream(
     State(engine): State<Arc<AgentEngine>>,
+    Extension(api_keys): Extension<Arc<ApiKeyStore>>,
+    headers: HeaderMap,
     Json(req): Json<AgentRequest>,
 ) -> ApiResult<Sse<impl Stream<Item = SseItem>>> {
     req.validate().map_err(|e| ApiError(AppError::BadRequest(e.to_string())))?;
+
+    // Phase 1: API Key 认证 + app_id 校验
+    let tenant = api_keys
+        .authenticate(&headers)
+        .map_err(|_status| {
+            tracing::warn!(app_id = %req.app_id, "auth failed");
+            ApiError(AppError::BadRequest("unauthorized".into()))
+        })?;
+    if !tenant.allowed_apps.is_empty() && !tenant.allowed_apps.contains(&req.app_id) {
+        return Err(ApiError(AppError::BadRequest(format!(
+            "app_id `{}` not allowed for tenant `{}`",
+            req.app_id, tenant.tenant,
+        ))));
+    }
 
     let input = AgentInput {
         app_id: req.app_id,
