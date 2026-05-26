@@ -1,10 +1,16 @@
 # ---------------------------------------------------------------------------
 # Workspace 根：根 crate 已退化为纯 bin（仅装配 + main.rs）。
-# 全部业务实现已下沉到 crates/* 子 crate：
-#   claw-core / claw-llm / claw-config / claw-agent / claw-api / claw-cli
+# 全部业务实现已下沉到 crates/* 子 crate + 根级 api/ cli/：
+#   api/          → 用户 HTTP API
+#   cli/          → clawctl 命令行工具
+#   crates/       → 内部实现库
+#     claw-types   - 配置定义 + AppError
+#     claw-llm      - LLM 客户端 + ChatMessage/Tool 契约
+#     claw-memory   - 用户分层记忆
+#     claw-agent    - AgentEngine + ReAct + Skill + 内置工具
 # ---------------------------------------------------------------------------
 [workspace]
-members = [".", "crates/*"]
+members = [".", "crates/*", "api", "cli"]
 resolver = "2"
 
 [workspace.package]
@@ -53,19 +59,18 @@ overflow-checks = false
 opt-level = 1
 
 # ---------------------------------------------------------------------------
-# 根 crate 现仅作为 bin 装配子 crate，不再持有任何业务实现。
+# 根 crate 仅作为 bin 装配子 crate，不持有任何业务实现。
 # 仅引入用于「装配 + 启动」必需的依赖：
-#   - 子 crate（claw-core / claw-llm / claw-config / claw-agent / claw-api）
+#   - 子 crate（claw-types / claw-llm / claw-memory / claw-agent / api）
 #   - tokio 多线程 runtime（手动构造）
 #   - tracing 初始化
 # ---------------------------------------------------------------------------
 [dependencies]
-claw-core   = { path = "crates/claw-core", features = ["ax-response", "yaml", "tools-http"] }
+claw-types = { path = "crates/claw-types" }
 claw-llm    = { path = "crates/claw-llm" }
-claw-config = { path = "crates/claw-config" }
+claw-memory = { path = "crates/claw-memory" }
 claw-agent  = { path = "crates/claw-agent" }
-claw-api    = { path = "crates/claw-api" }
-
+claw-api    = { path = "api" }
 
 # 多线程 tokio runtime（main 手动构造）
 tokio = { version = "1.38", features = [

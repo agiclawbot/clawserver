@@ -11,12 +11,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bytes::Bytes;
-use claw_core::chat::ChatMessage;
-use claw_core::error::{AppError, AppResult};
-use claw_core::llm::{ChatProvider, LlmDelta, LlmRequest};
-use claw_core::tool::{ToolCall, ToolSpec};
-use claw_core::util::breaker::CircuitBreaker;
-use claw_core::util::retry::backoff;
+use claw_types::{AppError, AppResult};
+use crate::chat::ChatMessage;
+use crate::llm::{ChatProvider, LlmDelta, LlmRequest};
+use crate::tool::{ToolCall, ToolSpec};
+use crate::util::breaker::CircuitBreaker;
+use crate::util::retry::backoff;
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

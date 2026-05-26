@@ -1,6 +1,6 @@
 [package]
 name = "claw-llm"
-description = "ClawServer LLM 客户端：OpenAI 兼容流式 chat + 全局 LlmPool。"
+description = "ClawServer LLM 客户端：ChatProvider trait + 连接池 + 熔断重试"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,8 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-claw-core   = { path = "../claw-core" }
+claw-types = { path = "../claw-types" }
+
 serde       = { workspace = true }
 serde_json  = { workspace = true }
 async-trait = { workspace = true }
@@ -18,9 +19,17 @@ futures     = { workspace = true }
 tokio       = { workspace = true, features = ["sync", "time", "rt", "macros"] }
 bytes       = "1"
 ulid        = "1"
+rand        = "0.8"
 reqwest = { version = "0.12", default-features = false, features = [
     "json",
     "rustls-tls",
     "stream",
     "gzip",
 ] }
+
+[features]
+default = []
+test-utils = []
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["sync", "rt", "macros", "time"] }

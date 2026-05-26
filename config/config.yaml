@@ -93,6 +93,12 @@ queue:
 buffer:
   channel_size: 256
 
+# 管理后台（独立端口，API Key 鉴权）
+admin:
+  enabled: true
+  bind: "0.0.0.0:3386"
+  api_key_env: "CLAW_ADMIN_KEY"
+
 # 可观测性
 observability:
   log_level: "info,clawserver=debug"

@@ -1,0 +1,40 @@
+[package]
+name = "claw-cli"
+description = "ClawServer 命令行调试工具：独立调试 LLM / Tool / Skill / Agent / Config。"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+claw-types = { path = "../crates/claw-types" }
+claw-llm    = { path = "../crates/claw-llm" }
+claw-agent  = { path = "../crates/claw-agent" }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+serde_yaml  = "0.9"
+async-trait = { workspace = true }
+futures     = { workspace = true }
+clap    = { version = "4", features = ["derive", "env"] }
+tokio   = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+colored = "2"
+anyhow  = "1"
+
+[features]
+default = ["server", "real-llm", "tools-builtin"]
+# 启用 `clawctl server` 子命令
+server   = []
+# 启用真实 LLM 调用（claw-llm 已常驻，此 feature 仅作启闭开关）
+real-llm = []
+# 强制 mock LLM（不发 HTTP）
+mock-llm = []
+# 启用内置工具（http_get / web_search）加入 tool 子命令默认注册表
+tools-builtin = ["claw-agent/tools-http"]
+
+[[bin]]
+name = "clawctl"
+path = "src/main.rs"

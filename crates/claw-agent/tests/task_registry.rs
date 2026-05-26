@@ -1,7 +1,7 @@
 //! TaskRegistry 行为：从 AppConfig 构建只读索引。
 
 use claw_agent::TaskRegistry;
-use claw_config::AppConfig;
+use claw_types::AppConfig;
 
 const MAIN_YAML: &str = r#"
 server:

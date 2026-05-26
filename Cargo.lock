@@ -309,16 +309,16 @@ name = "claw-agent"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "claw-config",
- "claw-core",
  "claw-llm",
+ "claw-memory",
+ "claw-types",
  "fred",
  "futures",
  "pin-project-lite",
+ "reqwest",
  "serde",
  "serde_json",
  "serde_yaml",
- "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tracing",
@@ -331,9 +331,9 @@ dependencies = [
  "async-trait",
  "axum",
  "claw-agent",
- "claw-config",
- "claw-core",
  "claw-llm",
+ "claw-memory",
+ "claw-types",
  "futures",
  "governor",
  "pin-project-lite",
@@ -341,7 +341,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tower 0.4.13",
@@ -358,8 +357,9 @@ dependencies = [
  "anyhow",
  "async-trait",
  "clap",
- "claw-core",
+ "claw-agent",
  "claw-llm",
+ "claw-types",
  "colored",
  "futures",
  "serde",
@@ -371,40 +371,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "claw-config"
-version = "0.1.0"
-dependencies = [
- "claw-core",
- "serde_yaml",
- "tempfile",
-]
-
-[[package]]
-name = "claw-core"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "axum",
- "http",
- "rand 0.8.6",
- "reqwest",
- "serde",
- "serde_json",
- "serde_yaml",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "claw-llm"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "bytes",
- "claw-core",
+ "claw-types",
  "futures",
+ "rand 0.8.6",
  "reqwest",
  "serde",
  "serde_json",
@@ -414,15 +388,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "claw-memory"
+version = "0.1.0"
+dependencies = [
+ "claw-types",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "claw-types"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
 name = "clawserver"
 version = "0.1.0"
 dependencies = [
  "axum",
  "claw-agent",
  "claw-api",
- "claw-config",
- "claw-core",
  "claw-llm",
+ "claw-memory",
+ "claw-types",
  "futures",
  "num_cpus",
  "serde",

@@ -20,10 +20,9 @@ use std::time::Duration;
 
 use tokio::sync::mpsc;
 
-use claw_core::chat::{AssistantToolCall, ChatMessage};
-use claw_core::error::AppResult;
-use claw_core::llm::{ChatProvider, LlmDelta, LlmRequest};
-use claw_core::tool::{ToolCall, ToolRegistry, ToolResult, ToolSpec};
+use claw_types::AppResult;
+use claw_llm::{AssistantToolCall, ChatMessage, ChatProvider, LlmDelta, LlmRequest};
+use claw_llm::{ToolCall, ToolRegistry, ToolResult, ToolSpec};
 
 /// ReAct 循环对外发出的事件。
 #[derive(Debug, Clone)]

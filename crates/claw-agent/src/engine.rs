@@ -42,14 +42,12 @@ use pin_project_lite::pin_project;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 
-use claw_config::{ConfigHandle, TaskConfig, TaskMode};
-use claw_core::chat::ChatMessage;
-use claw_core::error::{AppError, AppResult};
-use claw_core::llm::{LlmDelta, LlmRequest};
-use claw_core::tool::ToolRegistry;
+use claw_types::{AppError, AppResult, ConfigHandle, TaskConfig, TaskMode};
+use claw_llm::{ChatMessage, LlmDelta, LlmRequest, ToolRegistry};
 use claw_llm::LlmPool;
-use claw_core::skill::{Skill, SkillRegistry};
-use claw_core::user_memory::UserMemory;
+use claw_memory::UserMemoryStore;
+
+use crate::skill::{Skill, SkillRegistry};
 
 use crate::memory::SessionStore;
 use crate::react::{run_react, ReactConfig, ReactEvent};
@@ -86,7 +84,7 @@ pub struct AgentEngine {
     llm: Arc<LlmPool>,
     tools: Arc<ToolRegistry>,
     skills: Arc<SkillRegistry>,
-    user_memories: Arc<std::collections::HashMap<String, UserMemory>>,
+    user_memories: UserMemoryStore,
     channel_buffer: usize,
 }
 
@@ -98,7 +96,7 @@ impl AgentEngine {
         llm: Arc<LlmPool>,
         tools: Arc<ToolRegistry>,
         skills: Arc<SkillRegistry>,
-        user_memories: Arc<std::collections::HashMap<String, UserMemory>>,
+        user_memories: UserMemoryStore,
     ) -> Arc<Self> {
         let channel_buffer = cfg.load().buffer.channel_size;
         Arc::new(Self {
@@ -130,10 +128,10 @@ impl AgentEngine {
             .and_then(|name| self.skills.get(name));
 
         // 可选用户分层记忆：注入角色定义 / 行为规则 / 用户画像到 system
-        let user_memory = self
-            .user_memories
-            .get(&input.user_id)
-            .map(|m| m.to_prompt());
+        let user_memory = {
+            let map = self.user_memories.read().await;
+            map.get(&input.user_id).map(|m| m.to_prompt())
+        };
 
         // 1) 组装消息（系统 + skill.instruction + user_memory + 历史记忆 + 本轮 user）
         // 根据 max_turns 预估容量以减少运行时 reallocation

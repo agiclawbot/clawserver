@@ -4,9 +4,8 @@
 
 use std::collections::HashMap;
 
-use claw_llm::{
-    CircuitBreakerConfig, LlmConfig, LlmPool, LlmProviderConfig, RetryConfig,
-};
+use claw_llm::config::{CircuitBreakerConfig, LlmConfig, LlmProviderConfig, RetryConfig};
+use claw_llm::LlmPool;
 
 fn provider(default_model: &str) -> LlmProviderConfig {
     LlmProviderConfig {

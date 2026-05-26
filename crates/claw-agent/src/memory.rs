@@ -19,9 +19,8 @@ use fred::types::{
 };
 use serde::{Deserialize, Serialize};
 
-use claw_config::{AppConfig, RedisConfig};
-use claw_core::chat::{ChatMessage, ChatRole};
-use claw_core::error::{AppError, AppResult};
+use claw_types::{AppConfig, AppError, AppResult, RedisConfig};
+use claw_llm::{ChatMessage, ChatRole};
 
 /// 会话存储抽象。
 ///

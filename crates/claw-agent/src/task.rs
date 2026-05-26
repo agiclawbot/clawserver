@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use claw_config::{AppConfig, TaskConfig};
+use claw_types::{AppConfig, TaskConfig};
 
 pub struct TaskRegistry {
     inner: HashMap<String, Arc<TaskConfig>>,

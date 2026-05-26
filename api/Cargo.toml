@@ -1,0 +1,56 @@
+[package]
+name = "claw-api"
+description = "ClawServer HTTP API + axum 路由 + SSE 流式 + ops endpoints"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+claw-types = { path = "../crates/claw-types" }
+claw-llm    = { path = "../crates/claw-llm" }
+claw-agent  = { path = "../crates/claw-agent" }
+
+serde      = { workspace = true }
+serde_json = { workspace = true }
+tracing    = { workspace = true }
+
+tokio = { version = "1.38", features = [
+    "rt-multi-thread",
+    "macros",
+    "net",
+    "signal",
+    "sync",
+    "time",
+] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+futures = { workspace = true }
+
+# Axum + Tower 生态
+axum = { version = "0.7", features = ["macros", "http2", "tracing"] }
+tower = { version = "0.4", features = ["limit", "timeout", "load-shed", "buffer", "util"] }
+tower-http = { version = "0.5", features = [
+    "trace",
+    "timeout",
+    "limit",
+    "cors",
+    "compression-gzip",
+    "request-id",
+    "sensitive-headers",
+] }
+tower_governor = "0.4"
+governor = "0.6"
+
+pin-project-lite = "0.2"
+ulid = "1"
+
+# Prometheus 指标
+prometheus = "0.13"
+
+[dev-dependencies]
+claw-memory = { path = "../crates/claw-memory" }
+tempfile = "3"
+async-trait = { workspace = true }
+tokio = { version = "1.38", features = ["sync"] }

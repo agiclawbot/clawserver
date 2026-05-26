@@ -1,0 +1,21 @@
+[package]
+name = "claw-memory"
+description = "ClawServer 用户分层记忆：AGENT.md/SOULD.md/RULES.md/MEMORY.md/USER.md 文件 CRUD"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+claw-types = { path = "../claw-types" }
+
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+tokio       = { workspace = true, features = ["sync", "fs"] }
+tracing     = { workspace = true }
+
+[dev-dependencies]
+tokio     = { workspace = true, features = ["sync", "rt", "macros", "time"] }
+tempfile  = "3"

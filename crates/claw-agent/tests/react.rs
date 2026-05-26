@@ -4,10 +4,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use claw_agent::{run_react, ReactConfig, ReactEvent};
-use claw_core::chat::ChatMessage;
-use claw_core::llm::LlmDelta;
-use claw_core::test_utils::{MockProvider, MockTool};
-use claw_core::tool::{ToolCall, ToolRegistry};
+use claw_llm::chat::ChatMessage;
+use claw_llm::llm::LlmDelta;
+use claw_llm::test_utils::{MockProvider, MockTool};
+use claw_llm::tool::{ToolCall, ToolRegistry};
 use serde_json::json;
 use tokio::sync::mpsc::Receiver;
 

@@ -1,6 +1,6 @@
 [package]
 name = "claw-agent"
-description = "ClawServer Agent 引擎：TaskRegistry + SessionMemory(Redis) + ReAct 循环"
+description = "ClawServer Agent 编排：AgentEngine + SessionMemory(Redis) + ReAct + Skill/工具"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,16 +9,15 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-claw-core   = { path = "../claw-core", features = ["yaml"] }
+claw-types = { path = "../claw-types" }
 claw-llm    = { path = "../claw-llm" }
-claw-config = { path = "../claw-config" }
+claw-memory = { path = "../claw-memory" }
 
-serde      = { workspace = true }
-serde_json = { workspace = true }
-thiserror  = { workspace = true }
-tracing    = { workspace = true }
+serde       = { workspace = true }
+serde_json  = { workspace = true }
+serde_yaml  = "0.9"
+tracing     = { workspace = true }
 
-# 异步运行时（仅需 sync + macros + rt；不强制 multi-thread）
 tokio        = { version = "1.38", features = ["rt", "sync", "macros", "time"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 futures      = { workspace = true }
@@ -38,8 +37,19 @@ fred = { version = "9.2", default-features = false, features = [
     "i-client",
 ] }
 
+# 可选：内置 http_get 工具（引入 reqwest）
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+    "stream",
+    "gzip",
+], optional = true }
+
+[features]
+default = []
+tools-http = ["dep:reqwest"]
+
 [dev-dependencies]
-claw-core = { path = "../claw-core", features = ["yaml"] }
+claw-llm  = { path = "../claw-llm", features = ["test-utils"] }
 tokio     = { version = "1.38", features = ["rt", "macros", "time", "sync"] }
-serde_json = { workspace = true }
 serde_yaml = "0.9"
